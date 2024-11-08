@@ -1,45 +1,50 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
-			]
+			userAgenda: {},
+			contacts:[]		     
 		},
 		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
-			},
-			loadSomeData: () => {
-				/**
-					fetch().then().then(data => setStore({ "foo": data.bar }))
-				*/
-			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
+			
 
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
+			apiCall: async (uri,hdrs,success) => {
+				try{ const response = await fetch (uri,hdrs);
+					if (response.status !== success){throw new Error (`error code ${response.code}`)}
+					const body = await response.json();
+					return body;    
+					}
+				catch(error){
+					console.log('Error en apiCall:',error);
+					return null
+							}
+				},
 
-				//reset the global store
-				setStore({ demo: demo });
-			}
-		}
+			createUser: ()=> {
+				async function initialSetUp() {
+					const slug = await getActions().apiCall('https://playground.4geeks.com/contact/agendas/Aurelio',
+												{method : 'POST',
+												headers:{'accept':'application/json'}
+												},201);
+					console.log('Response from user creation:',slug);
+					const userContacts = await getActions().apiCall('https://playground.4geeks.com/contact/agendas/Aurelio',
+														{method:'GET',
+														headers:{'accept':'application/json'}
+														}, 200);
+					console.log('Contacts: ',userContacts.contacts);
+					let contacts = userContacts.contacts;
+					setStore({userAgenda:userContacts});
+					setStore({contacts:contacts})
+					}
+				initialSetUp();
+
+			},
+			
+			updateContactsContext: (userContacts) =>{
+				setStore({userAgenda:userContacts});
+				setStore({contacts:userContacts.contacts});
+			},
+
+		},
 	};
-};
-
+}
 export default getState;
